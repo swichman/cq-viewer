@@ -66,6 +66,7 @@ def df2heatmap(df, output=''):
         avg = ( avg + int(row["SNR"]) ) / 2
 
     if output != '':
-        heatmap_df.to_csv(output + '_heatmap.csv', index=False)
+        heatmap_df.to_csv(output + '_heatmap.csv', index=False, sep=';')
         df.to_csv(output + '_CQ-data.csv', index=False)
+
     return heatmap_df

@@ -2,7 +2,6 @@
 
 import cqviewer
 
-this = cqviewer.wsjtx2df('example/data_short.TXT')
+this = cqviewer.wsjtx2df('example/ALL.TXT')
 
-that = cqviewer.df2heatmap(this, "that")
-print(that)
+that = cqviewer.df2heatmap(this, "test1234")
