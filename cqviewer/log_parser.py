@@ -43,7 +43,7 @@ def wsjtx2df(filename):
 
     return data
 
-def df2heatmap(df):
+def df2heatmap(df, output=''):
     df = df.sort_values('Maidenhead')
     df = df.reset_index(drop=True)
 
@@ -55,9 +55,9 @@ def df2heatmap(df):
     for index, row in df.iterrows():
         if row["Maidenhead"] not in old_value and old_value != '' or index == len(df)-1:
             #print(f'MH: {old_value}    <==>    avg: {avg}')
-            heatmap_df = heatmap_df.append({"Latitude":row["Latitude"],
-                                            "Longitude":row["Longitude"],
-                                            "SNR": round((avg + 25),0)},
+            heatmap_df = heatmap_df.append({"weight":round((avg + 25),0),
+                                            "lat":row["Latitude"],
+                                            "lon":row["Longitude"]},
                                             ignore_index=True
                                           )
             avg = int(row["SNR"])
@@ -65,4 +65,7 @@ def df2heatmap(df):
         old_value = row["Maidenhead"]
         avg = ( avg + int(row["SNR"]) ) / 2
 
+    if output != '':
+        heatmap_df.to_csv(output + '_heatmap.csv', index=False)
+        df.to_csv(output + '_CQ-data.csv', index=False)
     return heatmap_df
