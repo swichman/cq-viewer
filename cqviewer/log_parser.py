@@ -43,7 +43,7 @@ def wsjtx2df(filename):
 
     return data
 
-def df2heatmap(df, output=''):
+def df2heatmap(df, output='', hm_path=''):
     df = df.sort_values('Maidenhead')
     df = df.reset_index(drop=True)
 
@@ -69,4 +69,12 @@ def df2heatmap(df, output=''):
         heatmap_df.to_csv(output + '_heatmap.csv', index=False, sep=';')
         df.to_csv(output + '_CQ-data.csv', index=False)
 
+    js_leaf_out = '''//heatmap data for spots.
+var addressPoints = [
+'''
+    for index, row in heatmap_df.iterrows():
+        js_leaf_out += f'[{row["lat"]},{row["lon"]},{row["weight"]/20}],\n'
+    js_leaf_out = js_leaf_out[:-2] + '\n];'
+    with open(hm_path + '/heatmap.js', 'w') as fh:
+        fh.write(js_leaf_out)
     return heatmap_df
