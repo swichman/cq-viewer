@@ -2,6 +2,41 @@
 
 import maidenhead as mh
 import pandas as pd
+import sqlite3
+
+class cqDB:
+    def __init__(self, db_name='WSJTX.db', log_name='ALL.TXT'):
+        try:
+            fh = open(str(log_name), 'r');
+            fh.close()
+        except:
+            print(f"No such log file '{filename}'... closing\n")
+            exit()
+
+        self.db_name = db_name
+        self.log_name = log_name
+        self.log_pointer = 0
+        self.connection = sqlite.connect(self.db_name)
+        self.create_db()
+
+    def create_db(self):
+        cursor = self.connection.cursor()
+        cursor.execute("CREATE TABLE cq_rx (Timestamp DATETIME, Frequency FLOAT, Mode STRING, Callsign STRING, Maidenhead STRING, Latitude FLOAT, Longitude FLOAT, SNR FLOAT)")
+        cursor.execute("CREATE TABLE cq_tx (Timestamp DATETIME, Frequency FLOAT, Mode STRING, Callsign STRING, Maidenhead STRING, Latitude FLOAT, Longitude FLOAT, SNR FLOAT)")
+        return db
+
+    
+
+    def wsjtx2sqlite(filename, tmpfile):
+        try:
+            fh = open(str(filename), 'r');
+            fh.close()
+        except:
+            print(f"No such file {filename}... closing\n")
+            exit()
+
+        connection = sqlite3.connect('cq-viewer.db')
+        return data
 
 def wsjtx2df(filename):
     try:
