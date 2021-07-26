@@ -22,19 +22,38 @@ class cqDB:
     def create_db(self):
         connection = sqlite3.connect(self.db_name)
         cursor = connection.cursor()
+        print('Building Database...')
         try:
-            cursor.execute("CREATE TABLE cq_rx (Timestamp STRING, Frequency FLOAT, Mode STRING, Callsign STRING, Maidenhead STRING, Latitude FLOAT, Longitude FLOAT, SNR FLOAT)")
-            cursor.execute("CREATE TABLE cq_tx (Timestamp STRING, Frequency FLOAT, Mode STRING, Callsign STRING, Maidenhead STRING, Latitude FLOAT, Longitude FLOAT, SNR FLOAT)")
+            cursor.execute("CREATE TABLE cq_rx (id INTEGER PRIMARY KEY AUTOINCREMENT, Timestamp STRING, Frequency FLOAT, Mode STRING, Callsign STRING, Maidenhead STRING, Latitude FLOAT, Longitude FLOAT, SNR FLOAT)")
+            cursor.execute("CREATE TABLE cq_tx (id INTEGER PRIMARY KEY AUTOINCREMENT, Timestamp STRING, Frequency FLOAT, Mode STRING, Callsign STRING, Maidenhead STRING, Latitude FLOAT, Longitude FLOAT, SNR FLOAT)")
         except sqlite3.OperationalError:
             print('Database already exists. Appending new data.')
-            pass
+            # Get the last timestamp entered into the cq_rx database
+            max_id = cursor.execute('SELECT max(ID) FROM cq_rx').fetchone()[0]
+            last_ts = cursor.execute(f'SELECT Timestamp FROM cq_rx WHERE ID = {max_id}').fetchone()[0]
+            print('last timestamp recorded: ' + last_ts)
+            print('Finding last position in file...')
+            # Find that timestamp in the log file
+            ind = 0
+            file_pos = -1
+            for line in self.log_fh:
+                ind += len(line)
+                if last_ts in line:
+                    file_pos = ind
+            if file_pos > 0:
+                print(f'Last position found at cursor position {file_pos}. Resuming...')
+            # if timestamp isn't found, close and open file to reset seek cursor.
+            if file_pos < 0:
+                print('No matching timestamp found for last entry. Data must be from different log file.')
+                self.log_fh.close()
+                self.log_fh = open(self.log_name, 'r')
         connection.commit()
         connection.close()
 
     def insert_data(self, data, x):
         connection = sqlite3.connect(self.db_name)
         cursor = connection.cursor()
-        cursor.execute(f'INSERT INTO {x} VALUES ("{data[0]}",{data[1]},"{data[2]}","{data[3]}","{data[4]}",{data[5]},{data[6]},{data[7]})')
+        cursor.execute(f'INSERT INTO {x}(Timestamp, Frequency, Mode, Callsign, Maidenhead, Latitude, Longitude, SNR) VALUES ("{data[0]}",{data[1]},"{data[2]}","{data[3]}","{data[4]}",{data[5]},{data[6]},{data[7]})')
         connection.commit()
         connection.close()
 
