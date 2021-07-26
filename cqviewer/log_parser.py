@@ -3,6 +3,7 @@
 import maidenhead as mh
 import pandas as pd
 import sqlite3
+import datetime
 
 class cqDB:
     def __init__(self, db_name='WSJTX.db', log_name='ALL.TXT'):
@@ -17,6 +18,7 @@ class cqDB:
         self.log_name = log_name
         self.log_pointer = 0
         self.log_fh = open(self.log_name, 'r')
+        self.db_index = 0
         self.create_db()
 
     def create_db(self):
@@ -42,6 +44,7 @@ class cqDB:
                     file_pos = ind
             if file_pos > 0:
                 print(f'Last position found at cursor position {file_pos}. Resuming...')
+                self.parse_log()
             # if timestamp isn't found, close and open file to reset seek cursor.
             if file_pos < 0:
                 print('No matching timestamp found for last entry. Data must be from different log file.')
@@ -79,6 +82,16 @@ class cqDB:
             fields = ' '.join(line.split()).split(' ')
             if 'CQ' in fields[7]:
                 self.parse_rx(fields)
+
+        connection = sqlite3.connect(self.db_name)
+        cursor = connection.cursor()
+        max_id = cursor.execute('SELECT max(ID) FROM cq_rx').fetchone()[0]
+        if self.db_index == 0:
+            print(f'{datetime.datetime.now()} ==> {max_id - self.db_index} entries in database. Following file for new data...')
+        else:
+            if (max_id - self.db_index) > 0:
+                print(f'{datetime.datetime.now()} ==> {max_id - self.db_index} new entries...')
+        self.db_index = max_id
 
 def wsjtx2df(filename):
     try:
