@@ -16,27 +16,50 @@ class cqDB:
         self.db_name = db_name
         self.log_name = log_name
         self.log_pointer = 0
-        self.connection = sqlite.connect(self.db_name)
+        self.log_fh = open(self.log_name, 'r')
         self.create_db()
 
     def create_db(self):
-        cursor = self.connection.cursor()
-        cursor.execute("CREATE TABLE cq_rx (Timestamp DATETIME, Frequency FLOAT, Mode STRING, Callsign STRING, Maidenhead STRING, Latitude FLOAT, Longitude FLOAT, SNR FLOAT)")
-        cursor.execute("CREATE TABLE cq_tx (Timestamp DATETIME, Frequency FLOAT, Mode STRING, Callsign STRING, Maidenhead STRING, Latitude FLOAT, Longitude FLOAT, SNR FLOAT)")
-        return db
-
-    
-
-    def wsjtx2sqlite(filename, tmpfile):
+        connection = sqlite3.connect(self.db_name)
+        cursor = connection.cursor()
         try:
-            fh = open(str(filename), 'r');
-            fh.close()
-        except:
-            print(f"No such file {filename}... closing\n")
-            exit()
+            cursor.execute("CREATE TABLE cq_rx (Timestamp STRING, Frequency FLOAT, Mode STRING, Callsign STRING, Maidenhead STRING, Latitude FLOAT, Longitude FLOAT, SNR FLOAT)")
+            cursor.execute("CREATE TABLE cq_tx (Timestamp STRING, Frequency FLOAT, Mode STRING, Callsign STRING, Maidenhead STRING, Latitude FLOAT, Longitude FLOAT, SNR FLOAT)")
+        except sqlite3.OperationalError:
+            print('Database already exists. Appending new data.')
+            pass
+        connection.commit()
+        connection.close()
 
-        connection = sqlite3.connect('cq-viewer.db')
-        return data
+    def insert_data(self, data, x):
+        connection = sqlite3.connect(self.db_name)
+        cursor = connection.cursor()
+        cursor.execute(f'INSERT INTO {x} VALUES ("{data[0]}",{data[1]},"{data[2]}","{data[3]}","{data[4]}",{data[5]},{data[6]},{data[7]})')
+        connection.commit()
+        connection.close()
+
+    def insert_rx(self, data):
+        self.insert_data(data, 'cq_rx')
+
+    def insert_tx(self, data):
+        self.insert_data(data, 'cq_tx')
+
+    def parse_rx(self, fields):
+        maidenhead = fields[len(fields)-1]
+        callsign = fields[len(fields)-2]
+        # ensure that maidenhead is in proper format
+        if len(maidenhead) == 4 or len(maidenhead) == 6:
+            # convert to lat/lon and store to dataframe
+            loc = mh.to_location(maidenhead)
+            data = [fields[0], fields[1], fields[3], callsign, maidenhead, loc[0], loc[1], fields[4]]
+            self.insert_rx(data)
+
+    def parse_log(self):
+        for line in self.log_fh:
+            # remove superfluous spaces, and split string into components
+            fields = ' '.join(line.split()).split(' ')
+            if 'CQ' in fields[7]:
+                self.parse_rx(fields)
 
 def wsjtx2df(filename):
     try:
